@@ -1,6 +1,6 @@
 from math import ceil
 import sys
-sys.setrecursionlimit(10000)
+sys.setrecursionlimit(100000)
 
 def printfile(file):
     for i in file:
@@ -9,12 +9,12 @@ def printfile(file):
 def floodfill(array, coord):
     xpos = coord[0]
     ypos = coord[1]
-    if array[xpos][ypos] == "X" or array[xpos][ypos] == "I":
+    if array[xpos][ypos] in "JL7F|-O":
         #        printfile(array)
         return array
     possnewcoords = []
     [[possnewcoords.append([x, y]) for y in range(ypos - 1, ypos + 2)] for x in range(xpos - 1, xpos + 2)]
-    array[xpos][ypos] = "I"
+    array[xpos][ypos] = "O"
     for i in possnewcoords:
         #        print(i)
         if not (0 <= i[0] < len(array)):
@@ -28,13 +28,9 @@ f = open('input.txt', 'r')
 file = [list(x) for x in f.read().strip().split()]
 #file = 
 """
-
-S------7
-L----7.|
-F--7.|.|
-|..L-J.|
-L------J
-
+S--7
+L-7|
+..LJ
 """.strip().split()
 
 
@@ -96,13 +92,13 @@ outheading = []
 
 for i in start_char_possibilites:
     file_copy = file
+    file_copy[start_coord[0]][start_coord[1]] = i[0]
     locations = [start_coord]
     cur_coord = i[1]
     headings = []
     prev_coord = start_coord
     while True:
         currchar = file_copy[cur_coord[0]][cur_coord[1]]
-        file_copy[cur_coord[0]][cur_coord[1]] = "X"
         if cur_coord in locations:
             break
         dictionary = {}
@@ -146,33 +142,55 @@ if clockwise_sum > 0:
 
 print(clockwise)
 
-for location, direction in zip(output, outheading):
-    match direction:
-        #i honestly don't know why this works
-        case "down":
-            right_coord = [0, -1]
-            if not clockwise:
-                right_coord = [0, 1]
-        case "up":
-            right_coord = [0, 1]
-            if not clockwise:
-                right_coord = [0, -1]
-        case "left":
-            right_coord = [-1, 0]
-            if not clockwise:
-                right_coord = [1, 0]
-        case "right":
-            right_coord = [1, 0]
-            if not clockwise:
-                right_coord = [-1, 0]
-    right_coord = [location[0] + right_coord[0], location[1] + right_coord[1]]
-    if outfile[right_coord[0]][right_coord[1]] == "X":
-        continue
-    else:
-        outfile = floodfill(outfile, right_coord)
+for i in enumerate(outfile):
+    for j in enumerate(i[1]):
+        if [i[0], j[0]] not in output:
+            outfile[i[0]][j[0]] = '.'
+
+newfile = []
+for i in outfile[1:]:
+    temp = []
+    for j in range(1, len(i) - 1):
+        temp.append(i[j])
+        prev = temp[-1]
+        next = i[j+1]
+        if prev in left_enter_pipes and next in right_exit_pipes:
+            temp.append('-')
+        else:
+            temp.append('.')
+    newfile.append(temp)
+printfile(newfile)
+outfile = newfile[:]
+newfile = []
+for i in range(len(outfile) - 1):
+    temp = []
+    prevline = outfile[i]
+    newfile.append(prevline)
+    nextline = outfile[i + 1]
+    for j in range(len(prevline)):
+        if prevline[j] in top_exit_pipes and nextline[j] in bottom_enter_pipes:
+            temp.append('|')
+        else:
+            temp.append('.')
+    newfile.append(temp)
+print()
+printfile(newfile)
+outfile = newfile[:]
+
+for i in range(len(outfile[0])):
+    outfile = floodfill(outfile, [0, i])
+    outfile = floodfill(outfile, [len(outfile) - 1, i])
+
+for i in range(len(outfile)):
+    outfile = floodfill(outfile, [i, 0])
+    outfile = floodfill(outfile, [i, len(outfile[0]) - 1])
+
 part2out = 0
-for i in outfile:
-    part2out += i.count("I")
+for i in enumerate(outfile):
+    for j in enumerate(i[1]):
+        #        print(i, j)
+        if (i[0] % 2 == 0 and j[0] % 2 == 0) and j[1] == '.':
+            part2out += 1
 
 printfile(outfile) #visualization
 print("part 1: ", ceil(len(output) / 2))
